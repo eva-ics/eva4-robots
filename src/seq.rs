@@ -1,19 +1,27 @@
 use eva_common::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 pub struct Sequence {
-    #[serde(alias = "uuid")]
-    u: Uuid,
+    #[serde(alias = "uuid", deserialize_with = "deserialize_uuid")]
+    pub u: Uuid,
     pub seq: Vec<SequenceEntry>,
     pub on_abort: Option<SequenceActionEntry>,
     #[serde(
         deserialize_with = "eva_common::tools::de_float_as_duration",
         serialize_with = "eva_common::tools::serialize_duration_as_f64"
     )]
-    timeout: Duration,
+    pub timeout: Duration,
+}
+
+pub fn deserialize_uuid<'de, D>(deserializer: D) -> Result<Uuid, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let val: Value = Deserialize::deserialize(deserializer)?;
+    Uuid::deserialize(val).map_err(serde::de::Error::custom)
 }
 
 impl Sequence {
