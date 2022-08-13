@@ -89,11 +89,27 @@ pub enum SequenceActionEntry {
 
 #[derive(Serialize, Deserialize)]
 pub struct SequenceAction {
-    i: OID,
-    params: Option<eva_common::actions::Params>,
+    #[serde(rename = "i")]
+    pub oid: OID,
+    pub params: Option<eva_common::actions::Params>,
     #[serde(
         deserialize_with = "eva_common::tools::de_float_as_duration",
         serialize_with = "eva_common::tools::serialize_duration_as_f64"
     )]
-    wait: Duration,
+    pub wait: Duration,
+}
+
+impl SequenceAction {
+    pub fn new_unit(oid: OID, status: ItemStatus, value: Option<Value>, wait: Duration) -> Self {
+        Self {
+            oid,
+            params: Some(eva_common::actions::Params::Unit(
+                eva_common::actions::UnitParams {
+                    status,
+                    value: value.into(),
+                },
+            )),
+            wait,
+        }
+    }
 }
