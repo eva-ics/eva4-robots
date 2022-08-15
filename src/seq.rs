@@ -79,6 +79,18 @@ impl Sequence {
     pub fn set_on_abort_multi(&mut self, actions: Vec<SequenceAction>) {
         self.on_abort = Some(SequenceActionEntry::Multi(actions));
     }
+    pub fn abort_timeout(&self) -> Duration {
+        if let Some(ref on_abort) = self.on_abort {
+            match on_abort {
+                SequenceActionEntry::Single(a) => a.wait,
+                SequenceActionEntry::Multi(actions) => {
+                    actions.iter().map(|a| a.wait).max().unwrap_or_default()
+                }
+            }
+        } else {
+            Duration::from_secs(0)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
