@@ -43,8 +43,10 @@ impl Sequence {
         self.timeout
     }
     #[inline]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn push_delay(&mut self, delay: Duration) {
-        self.seq.push(SequenceEntry::Delay(delay.as_secs_f64()));
+        self.seq
+            .push(SequenceEntry::Delay(delay.as_micros() as u64));
     }
     #[inline]
     pub fn push_action(&mut self, action: SequenceAction) {
@@ -60,7 +62,7 @@ impl Sequence {
         let mut duration: Duration = Duration::from_secs(0);
         for s in &self.seq {
             match s {
-                SequenceEntry::Delay(d) => duration += Duration::from_secs_f64(*d),
+                SequenceEntry::Delay(d) => duration += Duration::from_micros(*d),
                 SequenceEntry::Actions(a) => match a {
                     SequenceActionEntry::Single(action) => duration += action.wait,
                     SequenceActionEntry::Multi(actions) => {
@@ -96,7 +98,7 @@ impl Sequence {
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SequenceEntry {
-    Delay(f64),
+    Delay(u64),
     Actions(SequenceActionEntry),
 }
 
