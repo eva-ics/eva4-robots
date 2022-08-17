@@ -1,14 +1,14 @@
 use eva_common::prelude::*;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
-pub struct Sequence {
-    #[serde(alias = "uuid", deserialize_with = "deserialize_uuid")]
+pub struct SequenceOwned {
+    #[serde(alias = "uuid", deserialize_with = "crate::deserialize_uuid")]
     pub u: Uuid,
-    pub seq: Vec<SequenceEntry>,
-    pub on_abort: Option<SequenceActionEntry>,
+    pub seq: Vec<SequenceEntryOwned>,
+    pub on_abort: Option<SequenceActionEntryOwned>,
     #[serde(
         deserialize_with = "eva_common::tools::deserialize_duration_from_micros",
         serialize_with = "eva_common::tools::serialize_duration_as_micros"
@@ -16,15 +16,7 @@ pub struct Sequence {
     pub timeout: Duration,
 }
 
-pub fn deserialize_uuid<'de, D>(deserializer: D) -> Result<Uuid, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let val: Value = Deserialize::deserialize(deserializer)?;
-    Uuid::deserialize(val).map_err(serde::de::Error::custom)
-}
-
-impl Sequence {
+impl SequenceOwned {
     #[inline]
     pub fn new(timeout: Duration) -> Self {
         Self {
@@ -46,26 +38,28 @@ impl Sequence {
     #[allow(clippy::cast_possible_truncation)]
     pub fn push_delay(&mut self, delay: Duration) {
         self.seq
-            .push(SequenceEntry::Delay(delay.as_micros() as u64));
+            .push(SequenceEntryOwned::Delay(delay.as_micros() as u64));
     }
     #[inline]
-    pub fn push_action(&mut self, action: SequenceAction) {
-        self.seq
-            .push(SequenceEntry::Actions(SequenceActionEntry::Single(action)));
+    pub fn push_action(&mut self, action: SequenceActionOwned) {
+        self.seq.push(SequenceEntryOwned::Actions(
+            SequenceActionEntryOwned::Single(action),
+        ));
     }
     #[inline]
-    pub fn push_actions_multi(&mut self, actions: Vec<SequenceAction>) {
-        self.seq
-            .push(SequenceEntry::Actions(SequenceActionEntry::Multi(actions)));
+    pub fn push_actions_multi(&mut self, actions: Vec<SequenceActionOwned>) {
+        self.seq.push(SequenceEntryOwned::Actions(
+            SequenceActionEntryOwned::Multi(actions),
+        ));
     }
     pub fn max_expected_duration(&self) -> Duration {
         let mut duration: Duration = Duration::from_secs(0);
         for s in &self.seq {
             match s {
-                SequenceEntry::Delay(d) => duration += Duration::from_micros(*d),
-                SequenceEntry::Actions(a) => match a {
-                    SequenceActionEntry::Single(action) => duration += action.wait,
-                    SequenceActionEntry::Multi(actions) => {
+                SequenceEntryOwned::Delay(d) => duration += Duration::from_micros(*d),
+                SequenceEntryOwned::Actions(a) => match a {
+                    SequenceActionEntryOwned::Single(action) => duration += action.wait,
+                    SequenceActionEntryOwned::Multi(actions) => {
                         duration += actions.iter().map(|a| a.wait).max().unwrap_or_default();
                     }
                 },
@@ -74,18 +68,18 @@ impl Sequence {
         duration
     }
     #[inline]
-    pub fn set_on_abort(&mut self, action: SequenceAction) {
-        self.on_abort = Some(SequenceActionEntry::Single(action));
+    pub fn set_on_abort(&mut self, action: SequenceActionOwned) {
+        self.on_abort = Some(SequenceActionEntryOwned::Single(action));
     }
     #[inline]
-    pub fn set_on_abort_multi(&mut self, actions: Vec<SequenceAction>) {
-        self.on_abort = Some(SequenceActionEntry::Multi(actions));
+    pub fn set_on_abort_multi(&mut self, actions: Vec<SequenceActionOwned>) {
+        self.on_abort = Some(SequenceActionEntryOwned::Multi(actions));
     }
     pub fn abort_timeout(&self) -> Duration {
         if let Some(ref on_abort) = self.on_abort {
             match on_abort {
-                SequenceActionEntry::Single(a) => a.wait,
-                SequenceActionEntry::Multi(actions) => {
+                SequenceActionEntryOwned::Single(a) => a.wait,
+                SequenceActionEntryOwned::Multi(actions) => {
                     actions.iter().map(|a| a.wait).max().unwrap_or_default()
                 }
             }
@@ -97,20 +91,20 @@ impl Sequence {
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum SequenceEntry {
+pub enum SequenceEntryOwned {
     Delay(u64),
-    Actions(SequenceActionEntry),
+    Actions(SequenceActionEntryOwned),
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum SequenceActionEntry {
-    Single(SequenceAction),
-    Multi(Vec<SequenceAction>),
+pub enum SequenceActionEntryOwned {
+    Single(SequenceActionOwned),
+    Multi(Vec<SequenceActionOwned>),
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SequenceAction {
+pub struct SequenceActionOwned {
     #[serde(rename = "i")]
     pub oid: OID,
     pub params: Option<eva_common::actions::Params>,
@@ -121,7 +115,7 @@ pub struct SequenceAction {
     pub wait: Duration,
 }
 
-impl SequenceAction {
+impl SequenceActionOwned {
     pub fn new_unit(oid: OID, status: ItemStatus, value: Option<Value>, wait: Duration) -> Self {
         Self {
             oid,
