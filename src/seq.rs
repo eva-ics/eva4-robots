@@ -10,8 +10,8 @@ pub struct Sequence {
     pub seq: Vec<SequenceEntry>,
     pub on_abort: Option<SequenceActionEntry>,
     #[serde(
-        deserialize_with = "eva_common::tools::de_float_as_duration",
-        serialize_with = "eva_common::tools::serialize_duration_as_f64"
+        deserialize_with = "eva_common::tools::deserialize_duration_from_micros",
+        serialize_with = "eva_common::tools::serialize_duration_as_micros"
     )]
     pub timeout: Duration,
 }
@@ -113,8 +113,8 @@ pub struct SequenceAction {
     pub oid: OID,
     pub params: Option<eva_common::actions::Params>,
     #[serde(
-        deserialize_with = "eva_common::tools::de_float_as_duration",
-        serialize_with = "eva_common::tools::serialize_duration_as_f64"
+        deserialize_with = "eva_common::tools::deserialize_duration_from_micros",
+        serialize_with = "eva_common::tools::serialize_duration_as_micros"
     )]
     pub wait: Duration,
 }
