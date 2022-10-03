@@ -1,11 +1,11 @@
 [package]
 name = "eva-robots"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 authors = ["Sergei S. <div@altertech.com>"]
 license = "Apache-2.0"
 description = "Commons for EVA ICS v4"
-repository = "https://github.com/eva-ics/eva-robots"
+repository = "https://github.com/eva-ics/eva4-robots"
 readme = "README.md"
 keywords = ["eva-ics", "iot", "industrial", "robots"]
 
