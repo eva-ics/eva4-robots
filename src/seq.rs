@@ -107,19 +107,11 @@ pub struct SequenceAction<'a> {
 }
 
 impl<'a> SequenceAction<'a> {
-    pub fn new_unit(
-        oid: &'a OID,
-        status: ItemStatus,
-        value: Option<Value>,
-        wait: Duration,
-    ) -> Self {
+    pub fn new_unit(oid: &'a OID, value: Value, wait: Duration) -> Self {
         Self {
             oid,
             params: Some(eva_common::actions::Params::Unit(
-                eva_common::actions::UnitParams {
-                    status,
-                    value: value.into(),
-                },
+                eva_common::actions::UnitParams { value },
             )),
             wait,
         }
